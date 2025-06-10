@@ -1,6 +1,7 @@
 from . import db
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from .models import User, Post, NotificationMembers, NotificationTrigger
+from app.observers import on_user_follow, on_post_save, on_trigger_create
 
 main_bp = Blueprint('main', __name__)
 
@@ -70,6 +71,7 @@ def post_detail(post_id):
                 new_member = NotificationMembers(UserId=current_user.Id, PostId=post.Id)
                 db.session.add(new_member)
                 db.session.commit()
+                on_user_follow.notify(current_user, post)  # Gọi event khi follow
                 flash('Đã Follow!', 'success')
             else:
                 NotificationMembers.query.filter_by(UserId=current_user.Id, PostId=post.Id).delete()
@@ -80,12 +82,13 @@ def post_detail(post_id):
             if not is_followed:
                 flash('Bạn cần Follow trước khi Save!', 'danger')
             else:
-                # Đảm bảo member luôn mới nhất
                 member = NotificationMembers.query.filter_by(UserId=current_user.Id, PostId=post.Id).first()
                 if member:
                     new_trigger = NotificationTrigger(NotificationId=member.Id)
                     db.session.add(new_trigger)
                     db.session.commit()
+                    on_post_save.notify(post, current_user)
+                    on_trigger_create.notify(current_user, post)
                     flash('Đã trigger thông báo (Save) thành công!', 'success')
                 else:
                     flash('Không tìm thấy thông tin Follow!', 'danger')
