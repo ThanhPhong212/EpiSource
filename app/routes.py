@@ -56,8 +56,8 @@ def post_detail(post_id):
         if 'price' in request.form:
             try:
                 new_price = float(request.form.get('price'))
-                if new_price <= 0:
-                    price_error = "Giá phải lớn hơn 0"
+                if new_price <= 0 or new_price >= 1e8:
+                    price_error = "Giá phải lớn hơn 0 và nhỏ hơn 100,000,000"
                 else:
                     post.Price = new_price
                     db.session.commit()

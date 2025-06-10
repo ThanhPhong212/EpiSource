@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import sys
 import os
 import random
@@ -25,6 +28,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, 'email_templates')
 # --- Cấu hình email ---
 GMAIL_USER = os.environ.get("GMAIL_USER")
 GMAIL_PASS = os.environ.get("GMAIL_PASS")
+print("GMAIL_USER:", GMAIL_USER)  # Debugging line to check GMAIL_USER
 
 if not GMAIL_USER or not GMAIL_PASS:
     logging.error("Thiếu thông tin tài khoản Gmail trong biến môi trường.")

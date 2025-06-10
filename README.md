@@ -28,4 +28,4 @@ pip install -r requirements.txt
 
 # background
 venv\Scripts\activate 
-python background/worker.py
+python -m background.worker

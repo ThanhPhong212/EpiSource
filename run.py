@@ -1,6 +1,5 @@
 from app import create_app, db
 from sqlalchemy import text
-from app.models import User
 
 app = create_app()
 
