@@ -1,0 +1,56 @@
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+%}
+<ul>
+  {% for category, message in messages %}
+  <li style="color: green">{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %} {% endwith %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chi tiết Post</title>
+  </head>
+  <body>
+    <h1>Chi tiết Post</h1>
+    <p><b>User đang login:</b> {{ user.Name }} ({{ user.Email }})</p>
+    <!-- Form cập nhật giá -->
+    <form method="POST">
+      <p><b>Id:</b> <input type="text" value="{{ post.Id }}" readonly /></p>
+      <p>
+        <b>Tiêu đề:</b> <input type="text" value="{{ post.Title }}" readonly />
+      </p>
+      <p>
+        <b>Mô tả:</b>
+        <input type="text" value="{{ post.Description }}" readonly />
+      </p>
+      <p>
+        <b>Giá:</b>
+        <input
+          type="number"
+          value="{{ post.Price }}"
+          name="price"
+          step="0.01"
+          required
+        />
+        {% if price_error %}
+        <span style="color: red">{{ price_error }}</span>
+        {% endif %}
+      </p>
+      <button type="submit">Cập nhật giá</button>
+    </form>
+
+    <!-- Form follow/unfollow -->
+    <form method="POST" style="margin-top: 12px">
+      <button type="submit" name="follow" value="1">
+        {% if is_followed %} Unfollow {% else %} Follow {% endif %}
+      </button>
+    </form>
+
+    <form method="POST" style="margin-top: 12px">
+      <button type="submit" name="save" value="1">Save</button>
+    </form>
+
+    <p><a href="{{ url_for('main.index') }}">Quay lại danh sách</a></p>
+  </body>
+</html>

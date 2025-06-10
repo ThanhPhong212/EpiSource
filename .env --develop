@@ -1,0 +1,5 @@
+DATABASE_URL=postgresql://admin:admin%40123@localhost:5432/episource  // thay bằng kết nối đến database của bạn
+SECRET_KEY=your_secret_key
+
+GMAIL_USER=email gửi
+GMAIL_PASS=app password
