@@ -26,3 +26,6 @@ venv\Scripts\activate       # Windows
 # source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 
+# background
+venv\Scripts\activate 
+python background/worker.py

@@ -1,7 +1,6 @@
 from . import db
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from .models import User, Post, NotificationMembers
-import random
+from .models import User, Post, NotificationMembers, NotificationTrigger
 
 main_bp = Blueprint('main', __name__)
 
@@ -14,10 +13,17 @@ def index():
 def login():
     users = User.query.all()
     if request.method == 'POST':
-        user_id = int(request.form.get('user_id'))
-        session['user_id'] = user_id
-        flash('Đăng nhập thành công!', 'success')
-        return redirect(url_for('main.index'))
+        try:
+            user_id = int(request.form.get('user_id'))
+            user = User.query.get(user_id)
+            if user:
+                session['user_id'] = user_id
+                flash('Đăng nhập thành công!', 'success')
+                return redirect(url_for('main.index'))
+            else:
+                flash('Người dùng không tồn tại!', 'danger')
+        except Exception:
+            flash('Lỗi đăng nhập!', 'danger')
     return render_template('login.html', users=users)
 
 @main_bp.route('/logout')
@@ -30,20 +36,21 @@ def logout():
 def post_detail(post_id):
     user_id = session.get('user_id')
     if not user_id:
+        flash('Bạn cần đăng nhập để xem chi tiết bài viết.', 'warning')
         return redirect(url_for('main.login'))
     current_user = User.query.get(user_id)
+    if not current_user:
+        session.pop('user_id', None)
+        flash('Tài khoản không hợp lệ, vui lòng đăng nhập lại.', 'danger')
+        return redirect(url_for('main.login'))
 
     post = Post.query.get_or_404(post_id)
     post.ViewCount = (post.ViewCount or 0) + 1
     db.session.commit()
 
     price_error = None
-    is_followed = False
-    member = None
-
-    if current_user:
-        member = NotificationMembers.query.filter_by(UserId=current_user.Id, PostId=post.Id).first()
-        is_followed = member is not None
+    member = NotificationMembers.query.filter_by(UserId=current_user.Id, PostId=post.Id).first()
+    is_followed = member is not None
 
     if request.method == 'POST':
         if 'price' in request.form:
@@ -71,13 +78,17 @@ def post_detail(post_id):
             return redirect(url_for('main.post_detail', post_id=post.Id))
         elif 'save' in request.form:
             if not is_followed:
-                flash('Phải Follow trước khi Save!', 'danger')
+                flash('Bạn cần Follow trước khi Save!', 'danger')
             else:
-                from .models import NotificationTrigger
-                new_trigger = NotificationTrigger(NotificationId=member.Id)
-                db.session.add(new_trigger)
-                db.session.commit()
-                flash('Đã trigger thông báo (Save) thành công!', 'success')
+                # Đảm bảo member luôn mới nhất
+                member = NotificationMembers.query.filter_by(UserId=current_user.Id, PostId=post.Id).first()
+                if member:
+                    new_trigger = NotificationTrigger(NotificationId=member.Id)
+                    db.session.add(new_trigger)
+                    db.session.commit()
+                    flash('Đã trigger thông báo (Save) thành công!', 'success')
+                else:
+                    flash('Không tìm thấy thông tin Follow!', 'danger')
             return redirect(url_for('main.post_detail', post_id=post.Id))
 
     return render_template(
