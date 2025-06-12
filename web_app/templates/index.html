@@ -6,7 +6,7 @@
 <body>
      {% if session.get('user_id') %}
         <div style="text-align:right;">
-            <a href="{{ url_for('main.logout') }}">Đăng xuất</a>
+            <a href="{{ url_for('auth.logout') }}">Đăng xuất</a>
         </div>
     {% endif %}
     <h1>Danh sách bài Post</h1>
@@ -26,7 +26,7 @@
             <td>{{ post.Description }}</td>
             <td>{{ post.Price }}</td>
             <td>{{ post.ViewCount }}</td>
-            <td><a href="{{ url_for('main.post_detail', post_id=post.Id) }}">Xem chi tiết</a></td>
+            <td><a href="{{ url_for('post.post_detail', post_id=post.Id) }}">Xem chi tiết</a></td>
         </tr>
         {% endfor %}
     </table>

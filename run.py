@@ -10,7 +10,8 @@ def init_app():
         run_migration(app)
         seed = Seed(db.session)
         seed.start()
+        print("Database is ready!")
 
 if __name__ == '__main__':
     init_app()
-    app.run(use_reloader=False)
+    app.run(debug=True, use_reloader=False)
