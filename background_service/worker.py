@@ -1,15 +1,16 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import sys
 import os
 import random
 import time
 import logging
+from venv import create
 import yagmail
 from reportlab.pdfgen import canvas
-from app import create_app, db
-from app.models import User, Post, NotificationMembers, NotificationTrigger
+from dotenv import load_dotenv
+from shared.db import db
+from shared.models import User, Post, NotificationMembers
+from shared.repository import NotificationTriggerRepository
+from web_app import create_app
 
 # --- Cấu hình logging ---
 logging.basicConfig(
@@ -25,16 +26,21 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'email_templates')
 
+load_dotenv()
+
 # --- Cấu hình email ---
 GMAIL_USER = os.environ.get("GMAIL_USER")
 GMAIL_PASS = os.environ.get("GMAIL_PASS")
 print("GMAIL_USER:", GMAIL_USER)  # Debugging line to check GMAIL_USER
 
+# Inject dependencies
+notification_trigger_repository = NotificationTriggerRepository(db.session)
+
+app = create_app()
+
 if not GMAIL_USER or not GMAIL_PASS:
     logging.error("Thiếu thông tin tài khoản Gmail trong biến môi trường.")
     sys.exit(1)
-
-app = create_app()
 
 def create_pdf(post, filename):
     """Tạo file PDF chứa thông tin bài đăng."""
@@ -77,7 +83,7 @@ def send_notification_email(yag, user, post):
 def process_triggers():
     """Xử lý các trigger gửi thông báo."""
     with app.app_context():
-        triggers = NotificationTrigger.query.all()
+        triggers = notification_trigger_repository.get_all()
         for trig in triggers:
             try:
                 notif = db.session.get(NotificationMembers, trig.NotificationId)

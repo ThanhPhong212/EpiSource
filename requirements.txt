@@ -1,5 +1,7 @@
 Flask
 Flask-SQLAlchemy
+SQLAlchemy>=1.4
+alembic
 python-dotenv
 psycopg2-binary
 yagmail
