@@ -1,6 +1,6 @@
-from shared.db import db, Base
+from shared.db import db
 
-class NotificationMembers(Base):
+class NotificationMembers(db.Model):
     __tablename__ = 'NotificationMembers'
     Id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     UserId = db.Column(db.Integer, db.ForeignKey('User.Id', ondelete="CASCADE"))

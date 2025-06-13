@@ -24,8 +24,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set the SQLAlchemy URL
-config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
-db_url = os.getenv("DATABASE_URL")
+db_url = os.getenv("DATABASE_URL").replace('%', '%%')
 if not db_url:
     raise RuntimeError("DATABASE_URL is not set in the environment.")
 config.set_main_option("sqlalchemy.url", db_url)

@@ -1,6 +1,6 @@
-from shared.db import db, Base
+from shared.db import db
 
-class Post(Base):
+class Post(db.Model):
     __tablename__ = 'Post'
     Id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     Title = db.Column(db.String(200), nullable=False, unique=True)

@@ -1,6 +1,6 @@
 from shared.db import db, Base
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'User'
     Id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     Name = db.Column(db.String(100), nullable=False)
