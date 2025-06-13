@@ -8,7 +8,6 @@ import yagmail
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'background_service/email_templates')
-print(f"TEMPLATE_DIR: {TEMPLATE_DIR}")
 from shared.db import db
 from shared.models import User, Post, NotificationMembers
 from shared.repository import NotificationTriggerRepository
