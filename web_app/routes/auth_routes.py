@@ -1,26 +1,27 @@
-from flask import Blueprint, render_template, request
+from flask_restx import Namespace, Resource, fields
+from flask import request
 from shared.repository import UserRepository
 from web_app.services.auth_service import AuthService
 from shared.db import db
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+api = Namespace('auth', path='/auth', description='Authentication APIs')
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    user_repo = UserRepository(db.session)
-    auth_service = AuthService(user_repo)
+user_login_model = api.model('UserLogin', {
+    'user_id': fields.Integer(required=True, description='User ID'),
+})
 
-    users = user_repo.get_all()
-
-    if request.method == 'POST':
-        user_id = int(request.form.get('user_id'))
+@api.route('/login')
+class Login(Resource):
+    @api.expect(user_login_model)
+    def post(self):
+        user_repo = UserRepository(db.session)
+        auth_service = AuthService(user_repo)
+        user_id = request.json.get('user_id')
         return auth_service.login(user_id)
 
-    return render_template('login.html', users=users)
-
-
-@auth_bp.route('/logout')
-def logout():
-    user_repo = UserRepository(db.session)
-    auth_service = AuthService(user_repo)
-    return auth_service.logout()
+@api.route('/logout')
+class Logout(Resource):
+    def get(self):
+        user_repo = UserRepository(db.session)
+        auth_service = AuthService(user_repo)
+        return auth_service.logout()

@@ -7,4 +7,6 @@ psycopg2-binary
 yagmail
 reportlab
 pytest 
-pytest-flask 
+pytest-flask
+flask-restx
+Flask-JWT-Extended

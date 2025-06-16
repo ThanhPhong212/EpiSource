@@ -1,12 +1,22 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask_restx import Namespace, Resource, fields
+from flask import request
+from shared.db import db
 from shared.repository import (
     PostRepository, NotificationMembersRepository, NotificationTriggerRepository
 )
-from shared.db import db
 from web_app.services.post_service import PostService
-from shared.repository import UserRepository
+from flask_jwt_extended import jwt_required
 
-post_bp = Blueprint('post', __name__, url_prefix="/posts")
+api = Namespace('post', path='/posts', description='Post APIs')
+
+price_model = api.model('UpdatePrice', {
+    'price': fields.Float(required=True, description='New price')
+})
+
+follow_model = api.model('UserAction', {
+    'user_id': fields.Integer(required=True, description='User ID')
+})
+
 
 def get_post_service():
     post_repo = PostRepository(db.session)
@@ -14,71 +24,87 @@ def get_post_service():
     trigger_repo = NotificationTriggerRepository(db.session)
     return PostService(post_repo, notif_repo, trigger_repo)
 
+@api.route('/')
+class PostList(Resource):
+    @jwt_required()
+    @api.doc(description="Get all posts")
+    def get(self):
+        service = get_post_service()
+        posts = service.get_all()
+        return {"status": "success", "data": [p.to_dict() for p in posts]}
 
-@post_bp.route('/')
-def index():
-    service = get_post_service()
-    posts = service.get_all()
-    return render_template('index.html', posts=posts)
 
+@api.route('/<int:post_id>')
+class PostDetail(Resource):
+    @jwt_required()
+    @api.doc(description="Get post details and increase view count")
+    def get(self, post_id):
+        service = get_post_service()
+        post = service.get_by_id(post_id)
+        if not post:
+            return {"status": "error", "message": "Post not found"}, 404
 
-@post_bp.route('/<int:post_id>', methods=['GET', 'POST'])
-def post_detail(post_id):
-    user_repo = UserRepository(db.session)
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('Bạn cần đăng nhập!', 'warning')
-        return redirect(url_for('auth.login'))
-    
-    user = user_repo.get_by_id(user_id)
-    service = get_post_service()
-    post = service.get_by_id(post_id)
+        service.increase_view_count(post)
+        return {"status": "success", "data": post.to_dict()}
 
-    if not post:
-        flash('Bài viết không tồn tại!', 'danger')
-        return redirect(url_for('post.index'))
+@api.route('/<int:post_id>/price')
+class UpdatePrice(Resource):
+    @jwt_required()
+    @api.expect(price_model)
+    @api.doc(description="Update post price")
+    def post(self, post_id):
+        service = get_post_service()
+        post = service.get_by_id(post_id)
+        if not post:
+            return {"status": "error", "message": "Post not found"}, 404
 
-    service.increase_view_count(post)
-    price_error = None
-    is_followed = service.is_followed(user_id, post_id)
+        data = request.get_json()
+        price = data.get('price')
+        if not price or price <= 0 or price >= 1e8:
+            return {"status": "error", "message": "Price must be greater than 0 and less than 100,000,000"}, 400
 
-    if request.method == 'POST':
-        form = request.form
+        service.update_price(post, price)
+        return {"status": "success", "message": "Price updated successfully!"}
 
-        if 'price' in form:
-            try:
-                new_price = float(form.get('price'))
-                if new_price <= 0 or new_price >= 1e8:
-                    price_error = "Giá phải lớn hơn 0 và nhỏ hơn 100,000,000"
-                else:
-                    service.update_price(post, new_price)
-                    flash("Cập nhật giá thành công!", "success")
-                    return redirect(url_for('post.post_detail', post_id=post.Id))
-            except Exception:
-                price_error = "Giá không hợp lệ!"
+@api.route('/<int:post_id>/follow')
+class FollowPost(Resource):
+    @jwt_required()
+    @api.expect(follow_model)
+    @api.doc(description="Follow post")
+    def post(self, post_id):
+        user_id = request.get_json().get('user_id')
+        if not user_id:
+            return {"status": "error", "message": "Missing user_id"}, 400
 
-        elif 'follow' in form:
-            service.follow(user_id, post_id)
-            flash('Đã Follow!', 'success')
-            return redirect(url_for('post.post_detail', post_id=post.Id))
+        service = get_post_service()
+        service.follow(user_id, post_id)
+        return {"status": "success", "message": "Post followed successfully!"}
 
-        elif 'unfollow' in form:
-            service.unfollow(user_id, post_id)
-            flash('Đã Unfollow!', 'success')
-            return redirect(url_for('post.post_detail', post_id=post.Id))
+@api.route('/<int:post_id>/unfollow')
+class UnfollowPost(Resource):
+    @jwt_required()
+    @api.expect(follow_model)
+    @api.doc(description="Unfollow post")
+    def post(self, post_id):
+        user_id = request.get_json().get('user_id')
+        if not user_id:
+            return {"status": "error", "message": "Missing user_id"}, 400
 
-        elif 'save' in form:
-            ok = service.save_trigger(user_id, post_id)
-            if ok:
-                flash('Đã trigger thông báo (Save) thành công!', 'success')
-            else:
-                flash('Bạn cần Follow trước khi Save!', 'danger')
-            return redirect(url_for('post.post_detail', post_id=post.Id))
+        service = get_post_service()
+        service.unfollow(user_id, post_id)
+        return {"status": "success", "message": "Post unfollowed successfully!"}
 
-    return render_template(
-        'detail.html',
-        post=post,
-        user=user,
-        price_error=price_error,
-        is_followed=is_followed
-    )
+@api.route('/<int:post_id>/save')
+class SaveTrigger(Resource):
+    @jwt_required()
+    @api.expect(follow_model)
+    @api.doc(description="Trigger notification for post (requires follow)")
+    def post(self, post_id):
+        user_id = request.get_json().get('user_id')
+        if not user_id:
+            return {"status": "error", "message": "Missing user_id"}, 400
+
+        service = get_post_service()
+        if service.save_trigger(user_id, post_id):
+            return {"status": "success", "message": "Notification triggered successfully!"}
+        return {"status": "error", "message": "You need to follow the post before triggering notifications!"}, 400
