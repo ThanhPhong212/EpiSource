@@ -27,7 +27,7 @@ def get_post_service():
 @api.route('/')
 class PostList(Resource):
     @jwt_required()
-    @api.doc(description="Get all posts")
+    @api.doc(description="Get all posts", security='Bearer Auth')
     def get(self):
         service = get_post_service()
         posts = service.get_all()
@@ -37,7 +37,7 @@ class PostList(Resource):
 @api.route('/<int:post_id>')
 class PostDetail(Resource):
     @jwt_required()
-    @api.doc(description="Get post details and increase view count")
+    @api.doc(description="Get post details and increase view count", security='Bearer Auth')
     def get(self, post_id):
         service = get_post_service()
         post = service.get_by_id(post_id)
@@ -51,7 +51,7 @@ class PostDetail(Resource):
 class UpdatePrice(Resource):
     @jwt_required()
     @api.expect(price_model)
-    @api.doc(description="Update post price")
+    @api.doc(description="Update post price", security='Bearer Auth')
     def post(self, post_id):
         service = get_post_service()
         post = service.get_by_id(post_id)
@@ -70,7 +70,7 @@ class UpdatePrice(Resource):
 class FollowPost(Resource):
     @jwt_required()
     @api.expect(follow_model)
-    @api.doc(description="Follow post")
+    @api.doc(description="Follow post", security='Bearer Auth')
     def post(self, post_id):
         user_id = request.get_json().get('user_id')
         if not user_id:
@@ -84,7 +84,7 @@ class FollowPost(Resource):
 class UnfollowPost(Resource):
     @jwt_required()
     @api.expect(follow_model)
-    @api.doc(description="Unfollow post")
+    @api.doc(description="Unfollow post", security='Bearer Auth')
     def post(self, post_id):
         user_id = request.get_json().get('user_id')
         if not user_id:
@@ -98,7 +98,7 @@ class UnfollowPost(Resource):
 class SaveTrigger(Resource):
     @jwt_required()
     @api.expect(follow_model)
-    @api.doc(description="Trigger notification for post (requires follow)")
+    @api.doc(description="Trigger notification for post (requires follow)", security='Bearer Auth')
     def post(self, post_id):
         user_id = request.get_json().get('user_id')
         if not user_id:

@@ -8,7 +8,7 @@ class AuthService:
 
         if not user:
             return {"message": "User not found"}, 404
-        access_token = create_access_token(identity=user_id)
+        access_token = create_access_token(identity=str(user_id))
         return {
             "message": "Login successful",
             "access_token": access_token,

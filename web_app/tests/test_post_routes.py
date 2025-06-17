@@ -27,9 +27,19 @@ def test_index_route(client, session, access_token):
     assert res.status_code == 200
     assert post.Title in res.get_data(as_text=True)
 
-def test_post_detail_requires_login(client, session):
-    post = seed_post(session)
-    res = client.get(f"/posts/{post.Id}")
+@pytest.mark.parametrize("endpoint, method", [
+    ("/posts/", "get"),  # Lấy danh sách bài viết
+    ("/posts/1", "get"),  # Lấy chi tiết bài viết
+    ("/posts/1/price", "post"),  # Cập nhật giá bài viết
+    ("/posts/1/follow", "post"),  # Theo dõi bài viết
+    ("/posts/1/unfollow", "post"),  # Bỏ theo dõi bài viết
+    ("/posts/1/save", "post"),  # Kích hoạt thông báo bài viết
+])
+def test_routes_require_auth(client, endpoint, method):
+    if method == "get":
+        res = client.get(endpoint)
+    elif method == "post":
+        res = client.post(endpoint, json={})
     assert res.status_code == 401
 
 def test_post_detail_get_logged_in(client, session, access_token):

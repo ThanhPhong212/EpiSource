@@ -11,3 +11,9 @@ class NotificationMembersRepository:
     def get_all(self):
         triggers = self.db_session.query(NotificationMembers).all()
         return triggers
+    
+    def delete_by_user_id_post_id(self, user_id, post_id):
+        self.db_session.query(NotificationMembers) \
+            .filter(NotificationMembers.UserId == user_id, NotificationMembers.PostId == post_id) \
+            .delete(synchronize_session=False)
+        self.db_session.commit()

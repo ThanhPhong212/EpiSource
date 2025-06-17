@@ -6,17 +6,35 @@ from config import Config
 from shared.db import db
 from flask_restx import Api
 from flask_restx import Namespace
-from flask_jwt_extended import JWTManager
-from flask_jwt_extended.exceptions import NoAuthorizationError
+from flask_jwt_extended import JWTManager, exceptions
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
-
+    app.config['PROPAGATE_EXCEPTIONS'] = True
     db.init_app(app)
+
     jwt = JWTManager(app)
-    api = Api(app, title="Swagger", version="1.0", doc="/docs")
+    authorizations = {
+        'Bearer Auth': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': "Token dạng: 'Bearer {token}'"
+        }
+    }
+    api = Api(app,
+              title="Swagger",
+              version="1.0",
+              doc="/docs",
+              authorizations=authorizations,
+              security='Bearer Auth'
+    )
+
+    @app.errorhandler(exceptions.NoAuthorizationError)
+    def handle_auth_error(error):
+        return jsonify({"status": "error", "message": "Missing Authorization Header"}), 401
 
     @jwt.unauthorized_loader
     def unauthorized_response(callback):
@@ -39,15 +57,10 @@ def create_app(config_class=Config):
             "message": "Token has expired"
         }), 401
 
-    @app.errorhandler(NoAuthorizationError)
-    def handle_no_auth_error_global(error):
-        return jsonify({"status": "error", "message": "Missing Authorization Header"}), 401
-
-    register_blueprints(api)
-
+    register_flask(api)
     return app
 
-def register_blueprints(api):
+def register_flask(api):
     from web_app import routes
     package_dir = routes.__path__
 

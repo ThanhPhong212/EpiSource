@@ -1,12 +1,12 @@
 import os
 import pytest
-from flask import Flask
+from flask import Flask, jsonify
 from shared.db import db
-from shared.models import User  # hoặc import cụ thể model
 from flask_jwt_extended import JWTManager
 from web_app.routes.auth_routes import api as auth_ns
 from web_app.routes.post_routes import api as post_ns
 from flask_restx import Api
+from flask_jwt_extended import JWTManager, exceptions
 
 @pytest.fixture(scope="session")
 def app():
@@ -14,8 +14,8 @@ def app():
     app.config["SECRET_KEY"] = "test-secret"
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = "jwt-secret-test"
-
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "test-secret")
+    app.config['PROPAGATE_EXCEPTIONS'] = True
     db.init_app(app)
     jwt = JWTManager(app)
 
